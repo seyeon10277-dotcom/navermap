@@ -67,20 +67,25 @@ with st.sidebar:
     
     st.divider()
     
-    # --- 추가된 기능: 숙소 검색 섹션 ---
-    st.header("🏨 관광지 주변 숙소 찾기")
-    st.write("방문하실 지점 근처의 최적 숙소를 검색해보세요.")
+    # --- 추가된 기능: 숙소 및 렌터카 검색 섹션 ---
+    st.header("🔍 주변 인프라 검색")
+    st.write("선택하신 지점 근처의 정보를 실시간으로 확인하세요.")
     
     selected_stop = st.selectbox(
-        "지점을 선택하세요",
+        "검색 기준 지점을 선택하세요",
         options=[stop['name'] for stop in JEJU_STOPS],
         index=0
     )
     
     # 네이버 지도 검색 URL 생성
     hotel_search_url = f"https://map.naver.com/v5/search/{selected_stop}%20숙소"
+    rent_search_url = f"https://map.naver.com/v5/search/{selected_stop}%20렌터카"
     
-    st.link_button(f"✨ {selected_stop} 근처 숙소 보기", hotel_search_url, use_container_width=True)
+    col_side1, col_side2 = st.columns(2)
+    with col_side1:
+        st.link_button("🏨 숙소 찾기", hotel_search_url, use_container_width=True)
+    with col_side2:
+        st.link_button("🚗 렌터카 찾기", rent_search_url, use_container_width=True)
     
     st.divider()
     
@@ -182,4 +187,4 @@ if output.get('last_clicked'):
     else:
         st.write(f"좌표: {lat}, {lng}")
 else:
-    st.info("💡 사이드바에서 숙소를 검색하거나, 지도의 마커를 클릭하여 상세 위치를 확인하세요.")
+    st.info("💡 사이드바에서 숙소와 렌터카를 검색해 보세요. 지도의 동선은 공항부터 5가지 색상으로 연결되어 있습니다.")
