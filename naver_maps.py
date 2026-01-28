@@ -14,9 +14,10 @@ NAVER_CLIENT_SECRET = 'sQHQe1gafQ'
 # 날씨 API (사용자가 제공한 키 적용)
 WEATHER_API_KEY = 'd561aeb56991d4ee128fa0e544170f48'
 
-# --- 데이터 설정: 최적 동선 순서 (A -> E) ---
-# 구좌(북동) -> 성산(동부) -> 한라산(중앙) -> 서귀포(남부) -> 중문(남서) 순으로 구성
+# --- 데이터 설정: 최적 동선 순서 (출발지 포함) ---
+# 제주공항(시작) -> 구좌(북동) -> 성산(동부) -> 한라산(중앙) -> 서귀포(남부) -> 중문(남서)
 JEJU_STOPS = [
+    {"id": "Start", "name": "제주국제공항", "coords": [33.5104, 126.4913], "desc": "여행의 시작점 (제주시)"},
     {"id": "A", "name": "만장굴", "coords": [33.5284, 126.7716], "desc": "거대 용암동굴의 신비 (북동부)"},
     {"id": "B", "name": "성산일출봉", "coords": [33.4581, 126.9426], "desc": "유네스코 세계자연유산, 일출 명소 (동부)"},
     {"id": "C", "name": "한라산(성판악)", "coords": [33.3846, 126.6171], "desc": "제주의 영산, 백록담 산행 (중앙)"},
@@ -65,20 +66,21 @@ with st.sidebar:
         st.warning("날씨 API 정보를 불러올 수 없습니다.")
     
     st.divider()
-    st.header("📝 최적 여행 동선 (A-E)")
+    st.header("📝 최적 여행 동선")
     for stop in JEJU_STOPS:
-        st.write(f"**{stop['id']}. {stop['name']}**")
+        label = "🚩 시작" if stop['id'] == "Start" else f"📍 {stop['id']}"
+        st.write(f"**{label}. {stop['name']}**")
         st.caption(stop['desc'])
 
 # 메인 화면
 st.title("🌴 제주도 AI 여행 추천 & 최적 동선")
-st.markdown(f"**{JEJU_STOPS[0]['name']}(A)**에서 **{JEJU_STOPS[-1]['name']}(E)**까지 이어지는 최적의 여행 코스입니다.")
+st.markdown(f"**{JEJU_STOPS[0]['name']}(출발)**에서 시작하여 제주 동부와 남부를 일주하는 최적의 여행 코스입니다.")
 
 # 상단 대시보드 카드
 col1, col2, col3 = st.columns(3)
-col1.metric("총 방문지", "5곳")
+col1.metric("총 방문지", "6곳")
 col2.metric("권장 일정", "2박 3일")
-col3.metric("총 이동거리", "약 82km")
+col3.metric("총 이동거리", "약 112km")
 
 st.divider()
 
@@ -86,29 +88,33 @@ st.divider()
 m_col1, m_col2 = st.columns([3, 2])
 
 with m_col1:
-    st.subheader("📍 제주 여행 동선 지도 (A → E)")
+    st.subheader("📍 제주 여행 동선 지도 (공항 → E)")
     
     # 지도 중심 (제주도 중앙)
     m = folium.Map(location=[33.38, 126.65], zoom_start=10)
 
-    # 동선 시각화용 좌표 리스트 (마커용)
-    # route_coords = [stop['coords'] for stop in JEJU_STOPS] # 단일 PolyLine용으로, 여기서는 주석 처리
-
-    # 1. 마커 추가 (A, B, C, D, E 라벨 적용)
+    # 1. 마커 추가
     for stop in JEJU_STOPS:
-        # 번호별 색상 차별화 (시작점 A는 빨간색, 나머지는 파란색)
-        icon_color = 'red' if stop['id'] == 'A' else 'blue'
+        if stop['id'] == "Start":
+            icon_color = 'darkpurple'
+            icon_type = 'plane'
+        elif stop['id'] == "A":
+            icon_color = 'red'
+            icon_type = 'info-sign'
+        else:
+            icon_color = 'blue'
+            icon_type = 'info-sign'
         
         folium.Marker(
             location=stop['coords'],
             popup=f"<b>[{stop['id']}] {stop['name']}</b><br>{stop['desc']}",
             tooltip=f"{stop['id']}: {stop['name']}",
-            icon=folium.Icon(color=icon_color, icon='info-sign')
+            icon=folium.Icon(color=icon_color, icon=icon_type)
         ).add_to(m)
 
-    # 2. 이동 경로 선(PolyLine) 그리기 - 구간별 다색 적용
-    # 요청하신 빨강, 주황, 노랑, 초록 순서로 구간에 색상을 적용합니다.
-    segment_colors = ['red', 'orange', '#FFD700', 'green'] # 노랑은 가시성을 위해 골드색(#FFD700) 사용
+    # 2. 이동 경로 선(PolyLine) 그리기 - 구간별 5가지 색상 적용
+    # 공항->A(빨강), A->B(주황), B->C(노랑), C->D(초록), D->E(파랑)
+    segment_colors = ['red', 'orange', '#FFD700', 'green', 'blue'] 
 
     for i in range(len(JEJU_STOPS) - 1):
         start_stop = JEJU_STOPS[i]
@@ -117,9 +123,9 @@ with m_col1:
         folium.PolyLine(
             locations=[start_stop['coords'], end_stop['coords']],
             color=segment_colors[i],
-            weight=6, # 색상이 잘 보이도록 두께를 약간 늘림
+            weight=6,
             opacity=0.8,
-            tooltip=f"{start_stop['name']}({start_stop['id']}) ➡️ {end_stop['name']}({end_stop['id']})"
+            tooltip=f"{start_stop['name']} ➡️ {end_stop['name']}"
         ).add_to(m)
 
     # 3. 내 위치 찾기 컨트롤
@@ -135,7 +141,7 @@ with m_col1:
 with m_col2:
     st.subheader("🗺️ 네이버 실시간 상세지도")
     
-    # 현재 선택된 장소 혹은 기본 A장소 표시
+    # 기본값은 제주공항 표시
     target = JEJU_STOPS[0]
     naver_url = f"https://map.naver.com/v5/?c={target['coords'][1]},{target['coords'][0]},15,0,0,0,dh"
     
@@ -158,4 +164,4 @@ if output.get('last_clicked'):
     else:
         st.write(f"좌표: {lat}, {lng}")
 else:
-    st.info("💡 지도의 마커나 임의의 지점을 클릭하면 네이버 API를 통해 주소를 확인할 수 있습니다.")
+    st.info("💡 지도의 마커나 경로를 클릭해 보세요. 제주공항부터 시작하는 5가지 색상의 동선이 표시됩니다.")
