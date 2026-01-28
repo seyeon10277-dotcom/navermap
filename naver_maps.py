@@ -54,7 +54,7 @@ def get_jeju_weather():
 # --- Streamlit UI 설정 ---
 st.set_page_config(page_title="제주 AI 여행 대시보드", layout="wide")
 
-# 사이드바: 날씨 정보 및 여행 요약
+# 사이드바 설정
 with st.sidebar:
     st.header("🌦️ 제주 실시간 정보")
     weather = get_jeju_weather()
@@ -66,6 +66,24 @@ with st.sidebar:
         st.warning("날씨 API 정보를 불러올 수 없습니다.")
     
     st.divider()
+    
+    # --- 추가된 기능: 숙소 검색 섹션 ---
+    st.header("🏨 관광지 주변 숙소 찾기")
+    st.write("방문하실 지점 근처의 최적 숙소를 검색해보세요.")
+    
+    selected_stop = st.selectbox(
+        "지점을 선택하세요",
+        options=[stop['name'] for stop in JEJU_STOPS],
+        index=0
+    )
+    
+    # 네이버 지도 검색 URL 생성
+    hotel_search_url = f"https://map.naver.com/v5/search/{selected_stop}%20숙소"
+    
+    st.link_button(f"✨ {selected_stop} 근처 숙소 보기", hotel_search_url, use_container_width=True)
+    
+    st.divider()
+    
     st.header("📝 최적 여행 동선")
     for stop in JEJU_STOPS:
         label = "🚩 시작" if stop['id'] == "Start" else f"📍 {stop['id']}"
@@ -164,4 +182,4 @@ if output.get('last_clicked'):
     else:
         st.write(f"좌표: {lat}, {lng}")
 else:
-    st.info("💡 지도의 마커나 경로를 클릭해 보세요. 제주공항부터 시작하는 5가지 색상의 동선이 표시됩니다.")
+    st.info("💡 사이드바에서 숙소를 검색하거나, 지도의 마커를 클릭하여 상세 위치를 확인하세요.")
